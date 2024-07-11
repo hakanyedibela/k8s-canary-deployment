@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    type: canary
+    app: canary-deploy
+  name: canary-deploy
+  namespace: canary
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      type: canary
+      app: canary-deploy
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        type: canary
+        app: canary-deploy
+    spec:
+      containers:
+      - image: hakanyedibela/go-app:1.0.0
+        name: go-app
+        resources: {}
+status: {}
