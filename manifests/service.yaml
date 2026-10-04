@@ -1,0 +1,18 @@
+# One Service for both tracks. The selector deliberately omits "track", so
+# every ready Pod of stable AND canary is an endpoint. Traffic is split by the
+# replica ratio: 3 stable + 1 canary = ~25% canary.
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-app
+  namespace: canary
+  labels:
+    app: go-app
+spec:
+  type: ClusterIP
+  selector:
+    app: go-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: http

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-app-canary
+  namespace: canary
+  labels:
+    app: go-app
+    track: canary
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  # Selector must include "track": stable and canary Deployments may never
+  # select each other's Pods. The selector is immutable after creation.
+  selector:
+    matchLabels:
+      app: go-app
+      track: canary
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: go-app
+        track: canary
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: go-app
+        image: hakanyedibela/go-app:1.0.1
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          # Keep serving for a few seconds after termination starts, until the
+          # Pod's endpoint is removed from every node's kube-proxy rules.
+          # Without this, requests in flight during a rollout can fail.
+          preStop:
+            exec:
+              command: ["sleep", "5"]
+        ports:
+        - name: http
+          containerPort: 18080
+        readinessProbe:
+          httpGet:
+            path: /developer
+            port: http
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
